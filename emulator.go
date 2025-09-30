@@ -9,15 +9,15 @@ import (
 	"strings"
 	"sync"
 
-	tasks "google.golang.org/genproto/googleapis/cloud/tasks/v2"
-	v1 "google.golang.org/genproto/googleapis/iam/v1"
+	tasks "cloud.google.com/go/cloudtasks/apiv2/cloudtaskspb"
+	v1 "cloud.google.com/go/iam/apiv1/iampb"
 
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
 
-	"github.com/golang/protobuf/proto"
-	"github.com/golang/protobuf/ptypes/empty"
+	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/grpc"
+	"google.golang.org/protobuf/proto"
 )
 
 // NewServer creates a new emulator server with its own task and queue bookkeeping
@@ -160,7 +160,7 @@ func (s *Server) UpdateQueue(ctx context.Context, in *tasks.UpdateQueueRequest) 
 }
 
 // DeleteQueue removes an existing queue.
-func (s *Server) DeleteQueue(ctx context.Context, in *tasks.DeleteQueueRequest) (*empty.Empty, error) {
+func (s *Server) DeleteQueue(ctx context.Context, in *tasks.DeleteQueueRequest) (*emptypb.Empty, error) {
 	queue, ok := s.fetchQueue(in.GetName())
 
 	// Cloud responds with same error for recently deleted queue
@@ -172,7 +172,7 @@ func (s *Server) DeleteQueue(ctx context.Context, in *tasks.DeleteQueueRequest) 
 
 	s.removeQueue(in.GetName())
 
-	return &empty.Empty{}, nil
+	return &emptypb.Empty{}, nil
 }
 
 // PurgeQueue purges the specified queue
@@ -238,7 +238,7 @@ func (s *Server) ListTasks(ctx context.Context, in *tasks.ListTasksRequest) (*ta
 
 	for _, task := range queue.ts {
 		if task != nil {
-			taskStates = append(taskStates, task.state)
+			taskStates = append(taskStates, task.Snapshot())
 		}
 	}
 
@@ -298,7 +298,7 @@ func (s *Server) CreateTask(ctx context.Context, in *tasks.CreateTaskRequest) (*
 }
 
 // DeleteTask removes an existing task
-func (s *Server) DeleteTask(ctx context.Context, in *tasks.DeleteTaskRequest) (*empty.Empty, error) {
+func (s *Server) DeleteTask(ctx context.Context, in *tasks.DeleteTaskRequest) (*emptypb.Empty, error) {
 	task, ok := s.fetchTask(in.GetName())
 	if !ok {
 		return nil, status.Errorf(codes.NotFound, "Task does not exist.")
@@ -310,7 +310,7 @@ func (s *Server) DeleteTask(ctx context.Context, in *tasks.DeleteTaskRequest) (*
 	// The removal of the task from the server struct is handled in the queue callback
 	task.Delete()
 
-	return &empty.Empty{}, nil
+	return &emptypb.Empty{}, nil
 }
 
 // RunTask executes an existing task immediately

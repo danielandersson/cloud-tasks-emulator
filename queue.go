@@ -5,10 +5,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/golang/protobuf/proto"
-	pduration "github.com/golang/protobuf/ptypes/duration"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/durationpb"
 
-	tasks "google.golang.org/genproto/googleapis/cloud/tasks/v2"
+	tasks "cloud.google.com/go/cloudtasks/apiv2/cloudtaskspb"
 )
 
 // Queue holds all internals for a task queue
@@ -101,14 +101,10 @@ func setInitialQueueState(queueState *tasks.Queue) {
 		queueState.RetryConfig.MaxDoublings = 16
 	}
 	if queueState.GetRetryConfig().GetMinBackoff() == nil {
-		queueState.RetryConfig.MinBackoff = &pduration.Duration{
-			Nanos: 100000000,
-		}
+		queueState.RetryConfig.MinBackoff = durationpb.New(100 * time.Millisecond)
 	}
 	if queueState.GetRetryConfig().GetMaxBackoff() == nil {
-		queueState.RetryConfig.MaxBackoff = &pduration.Duration{
-			Seconds: 3600,
-		}
+		queueState.RetryConfig.MaxBackoff = durationpb.New(3600 * time.Second)
 	}
 
 	queueState.State = tasks.Queue_RUNNING
